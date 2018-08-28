@@ -2,7 +2,7 @@ organization := "org.in-cal"
 
 name := "incal-play"
 
-version := "0.0.18"
+version := "0.0.19"
 
 description := "InCal extension for Play Framework providing basic readonly/crud controllers, deadbolt-backed security, json formatter, etc."
 
