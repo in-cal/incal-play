@@ -2,6 +2,10 @@ package org.incal.play.formatters
 
 import play.api.data.format.Formatter
 
+/**
+  * @author Peter Banda
+  * @since 2018
+  */
 private class EitherSeqFormatter[T](val seqFormatter: Formatter[Seq[T]]) extends Formatter[Either[Option[T], Seq[T]]] {
 
   def bind(key: String, data: Map[String, String]) = {

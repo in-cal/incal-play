@@ -4,6 +4,10 @@ import play.api.data.FormError
 import play.api.data.format.Formatter
 import play.api.libs.json.{Format, JsObject, JsString, Json}
 
+/**
+  * @author Peter Banda
+  * @since 2018
+  */
 object MapJsonFormatter {
 
   def apply = new Formatter[Map[String, String]] {
@@ -29,6 +33,10 @@ object MapJsonFormatter {
   }
 }
 
+/**
+  * @author Peter Banda
+  * @since 2018
+  */
 object JsonFormatter {
 
   def apply[E: Format] = new Formatter[E] {

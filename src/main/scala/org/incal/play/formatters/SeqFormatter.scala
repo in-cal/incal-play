@@ -3,6 +3,10 @@ package org.incal.play.formatters
 import play.api.data.FormError
 import play.api.data.format.Formatter
 
+/**
+  * @author Peter Banda
+  * @since 2018
+  */
 private object StringSeqFormatter extends Formatter[Seq[String]] {
 
   def bind(key: String, data: Map[String, String]) = {
