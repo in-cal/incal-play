@@ -31,6 +31,10 @@ object WebContext {
     implicit webContext: WebContext
   ): WebJarAssets = webContext.webJarAssets
 
+  implicit def toConfiguration(
+    implicit webContext: WebContext
+  ): Configuration = webContext.configuration
+
   implicit def apply(
     messagesApi: MessagesApi,
     webJarAssets: WebJarAssets,
