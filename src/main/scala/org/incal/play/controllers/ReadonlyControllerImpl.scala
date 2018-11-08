@@ -5,7 +5,6 @@ import play.api.libs.json._
 import play.api.mvc._
 import org.incal.core.dataaccess._
 import org.incal.core.FilterCondition
-import org.incal.core.FilterCondition.toCriterion
 import org.incal.play.Page
 import org.incal.play.security.AuthAction
 
@@ -52,7 +51,9 @@ abstract class ReadonlyControllerImpl[E: Format, ID] extends BaseController
 
   protected def repo: AsyncReadonlyRepo[E, ID]
 
-  protected def repoHook = repo
+  protected def toJson(item: E) = Json.toJson(item)
+
+  protected def toJson(items: Traversable[E]) = Json.toJson(items)
 
   protected def listViewColumns: Option[Seq[String]] = None
 
@@ -85,7 +86,7 @@ abstract class ReadonlyControllerImpl[E: Format, ID] extends BaseController
           case Some(entity) =>
             render {
               case Accepts.Html() => Ok(showViewWithContext(viewData.get))
-              case Accepts.Json() => Ok(Json.toJson(entity))
+              case Accepts.Json() => Ok(toJson(entity))
             }
         }
     }.recover(handleGetExceptions(id))
@@ -114,7 +115,7 @@ abstract class ReadonlyControllerImpl[E: Format, ID] extends BaseController
       } yield
         render {
           case Accepts.Html() => Ok(listViewWithContext(viewData))
-          case Accepts.Json() => Ok(Json.toJson(items))
+          case Accepts.Json() => Ok(toJson(items))
         }
     }.recover(handleFindExceptions)
   }
@@ -136,7 +137,7 @@ abstract class ReadonlyControllerImpl[E: Format, ID] extends BaseController
       } yield
         render {
           case Accepts.Html() => Ok(listViewWithContext(viewData))
-          case Accepts.Json() => Ok(Json.toJson(items))
+          case Accepts.Json() => Ok(toJson(items))
         }
     }.recover(handleListAllExceptions)
   }
@@ -213,8 +214,8 @@ abstract class ReadonlyControllerImpl[E: Format, ID] extends BaseController
   ): Future[Seq[Criterion[Any]]] = {
     val fieldNames = filter.seq.map(_.fieldName)
 
-    filterValueConverters(fieldNames).map( valueConverters =>
-      filter.map(toCriterion(valueConverters)).flatten
+    filterValueConverters(fieldNames).map(
+      FilterCondition.toCriteria(_, filter)
     )
   }
 

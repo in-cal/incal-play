@@ -24,7 +24,7 @@ class GuiceRunnableApp[T <: Runnable](
     // if modules are specified use them, otherwise load ALL available play modules
     val initModules = if (modules.nonEmpty) modules else availablePlayModules
 
-    new GuiceApplicationBuilder().configure("play.modules.enabled" -> modules).build
+    new GuiceApplicationBuilder().configure("play.modules.enabled" -> initModules).build
   }
 
   app.injector.instanceOf[T].run
