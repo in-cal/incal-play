@@ -41,8 +41,17 @@ object WebUtil {
       throw new IllegalArgumentException("FormUrlEncoded or MultipartFormData request expected.")
   }
 
-  def getRequestParamValue(paramKey: String)(implicit request: Request[AnyContent]) =
-    getRequestParamMap.get(paramKey).map(_.head).getOrElse(
+  def getRequestParamValueOptional(
+    paramKey: String)(
+    implicit request: Request[AnyContent]
+  ) =
+    getRequestParamMap.get(paramKey).map(_.head)
+
+  def getRequestParamValue(
+    paramKey: String)(
+    implicit request: Request[AnyContent]
+  ) =
+    getRequestParamValueOptional(paramKey).getOrElse(
       throw new IllegalArgumentException(s"Request param with the key $paramKey not found.")
     )
 
