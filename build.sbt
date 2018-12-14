@@ -2,7 +2,7 @@ organization := "org.in-cal"
 
 name := "incal-play"
 
-version := "0.0.22"
+version := "0.0.25"
 
 description := "In-Cal extension for Play Framework providing basic readonly/crud controllers, deadbolt-backed security, json formatter, etc."
 
@@ -19,7 +19,7 @@ libraryDependencies ++= Seq(
   "org.webjars" %% "webjars-play" % "2.5.0",
   "be.objectify" %% "deadbolt-scala" % "2.5.1",
   "net.codingwell" %% "scala-guice" % "4.0.1",
-  "org.in-cal" %% "incal-core" % "0.0.6"
+  "org.in-cal" %% "incal-core" % "0.0.9"
 )
 
 
