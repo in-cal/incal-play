@@ -3,7 +3,7 @@ package org.incal.play
 /**
   * Helper for pagination.
   */
-case class Page[A](
+case class Page[+A](
   items: Traversable[A],
   page: Int,
   offset: Long,

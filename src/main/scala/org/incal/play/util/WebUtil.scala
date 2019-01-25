@@ -5,25 +5,35 @@ import play.api.mvc.{AnyContent, Call, Request, Result}
 
 object WebUtil {
 
-  def matchesPath(coreUrl : String, url : String, matchPrefixDepth : Option[Int] = None) =
+  def matchesPath(
+    coreUrl: String,
+    url: String,
+    matchPrefixDepth: Option[Int] = None,
+    fixedUrlPrefix: Option[String] = None
+  ) =
     matchPrefixDepth match {
-      case Some(prefixDepth) => {
+      case Some(prefixDepth) =>
+        val (stripedCoreUrl, stripedUrl) = fixedUrlPrefix.map { prefix =>
+            (coreUrl.stripPrefix(prefix), url.stripPrefix(prefix))
+          }.getOrElse(
+            (coreUrl, url)
+          )
+
         var slashPos = 0
         for (i <- 1 to prefixDepth) {
-          slashPos = coreUrl.indexOf('/', slashPos + 1)
+          slashPos = stripedCoreUrl.indexOf('/', slashPos + 1)
         }
         if (slashPos == -1) {
-          slashPos = coreUrl.indexOf('?')
+          slashPos = stripedCoreUrl.indexOf('?')
           if (slashPos == -1)
-            slashPos = coreUrl.length
+            slashPos = stripedCoreUrl.length
         }
-        val subString = coreUrl.substring(0, slashPos)
-        url.startsWith(coreUrl.substring(0, slashPos))
-      }
+        stripedUrl.startsWith(stripedCoreUrl.substring(0, slashPos))
+
       case None => url.startsWith(coreUrl)
     }
 
-  def getParamValue(url : String, param: String): Option[String] = {
+  def getParamValue(url: String, param: String): Option[String] = {
     val tokens = url.split(param + "=")
     if (tokens.isDefinedAt(1))
       Some(tokens(1).split("&")(0))
