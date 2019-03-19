@@ -4,7 +4,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import scala.collection.JavaConversions.iterableAsScalaIterable
 
 /**
-  * A simple app backed by Guice, which runs a given runnable.
+  * A simple app backed by Guice IOC, which runs a given runnable.
   *
   * @author Peter Banda
   * @since 2018

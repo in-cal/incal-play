@@ -1,0 +1,30 @@
+@import views.html.helper
+@import helper.{options, FieldConstructor}
+@import elements.html.bootstrapInput
+@import html.attributeLabel
+@import play.api.data.Form
+
+@(
+    domainName : String,
+    attribute : String,
+    form: Form[_],
+    values: Seq[(String, String)],
+    optional: Boolean,
+    args: Seq[(Symbol, Any)] = Nil,
+    labelGridWidth: Int = 2
+)(
+    implicit msg: play.api.i18n.Messages
+)
+
+@implicitFieldConstructor = @{ FieldConstructor(bootstrapInput.f(labelGridWidth)) }
+
+@helper.select(
+    form(attribute),
+    options(values :_*),
+    List(
+        '_label -> attributeLabel(domainName, attribute),
+        'class -> "form-control"
+    ) ++
+            (if (optional) List('_default -> "") else List()) ++
+            args: _*
+)
