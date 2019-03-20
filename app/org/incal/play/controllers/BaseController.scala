@@ -21,10 +21,10 @@ class BaseController extends Controller {
   @Inject protected var webJarAssets: WebJarAssets = _
   @Inject protected var configuration: Configuration = _
 
-//  protected implicit def webContext(implicit request: Request[_]) = {
+// protected implicit def webContext(implicit request: Request[_]) = {
 //    implicit val authenticatedRequest = new AuthenticatedRequest(request, None)
 //    WebContext(messagesApi, webJarAssets, configuration)
-//  }
+// }
 
   protected implicit def webContext(implicit request: AuthenticatedRequest[_]) =
     WebContext(messagesApi, webJarAssets, configuration)(request)
