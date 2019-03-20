@@ -2,7 +2,7 @@ organization := "org.in-cal"
 
 name := "incal-play"
 
-version := "0.1.2"
+version := "0.1.3"
 
 description := "In-Cal extension for Play Framework providing basic readonly/crud controllers, deadbolt-backed security, json formatters, etc."
 
@@ -15,10 +15,9 @@ resolvers ++= Seq(
 )
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala)
-// lazy val root = (project in file(".")).enablePlugins(SbtTwirl)
 
 libraryDependencies ++= Seq(
-  "com.typesafe.play" %% "play" % "2.5.7",
+  "com.typesafe.play" %% "play" % "2.5.9",
   "org.webjars" %% "webjars-play" % "2.5.0",
   "be.objectify" %% "deadbolt-scala" % "2.5.1",
   "net.codingwell" %% "scala-guice" % "4.0.1",
