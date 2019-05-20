@@ -2,7 +2,7 @@ organization := "org.in-cal"
 
 name := "incal-play"
 
-version := "0.1.6"
+version := "0.1.7"
 
 description := "In-Cal extension for Play Framework providing basic readonly/crud controllers, deadbolt-backed security, json formatters, etc."
 
@@ -21,9 +21,8 @@ libraryDependencies ++= Seq(
   "org.webjars" %% "webjars-play" % "2.5.0",
   "be.objectify" %% "deadbolt-scala" % "2.5.1",
   "net.codingwell" %% "scala-guice" % "4.0.1",
-  "org.in-cal" %% "incal-core" % "0.1.4"
+  "org.in-cal" %% "incal-core" % "0.1.5"
 )
-
 
 // POM settings for Sonatype
 

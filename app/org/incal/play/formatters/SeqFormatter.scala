@@ -7,12 +7,16 @@ import play.api.data.format.Formatter
   * @author Peter Banda
   * @since 2018
   */
-private object StringSeqFormatter extends Formatter[Seq[String]] {
+final class SeqFormatter[T](
+    fromString: String => Option[T],
+    toString: T => String = (x: T) => x.toString, // by default call toString
+    delimiter: String = ","                       // use comma as a default delimiter
+  ) extends Formatter[Seq[T]] {
 
-  def bind(key: String, data: Map[String, String]) = {
+  def bind(key: String, data: Map[String, String]) =
     try {
       data.get(key).map { string =>
-        val items = string.split(",").map(_.trim).filter(_.nonEmpty).toSeq
+        val items = string.split(delimiter, -1).map(_.trim).filter(_.nonEmpty).flatMap(fromString(_)).toSeq
         Right(items)
       }.getOrElse(
         Left(List(FormError(key, s"No value found for the key '$key'")))
@@ -20,56 +24,24 @@ private object StringSeqFormatter extends Formatter[Seq[String]] {
     } catch {
       case e: Exception => Left(List(FormError(key, e.getMessage)))
     }
-  }
 
-  def unbind(key: String, value: Seq[String]) = {
-    Map(key -> value.mkString(", "))
-  }
-}
-
-private object IntSeqFormatter extends Formatter[Seq[Int]] {
-
-  def bind(key: String, data: Map[String, String]) = {
-    try {
-      data.get(key).map { string =>
-        val items = string.split(",").map(_.trim).filter(_.nonEmpty).map(_.toInt).toSeq
-        Right(items)
-      }.getOrElse(
-        Left(List(FormError(key, s"No value found for the key '$key'")))
-      )
-    } catch {
-      case e: Exception => Left(List(FormError(key, e.getMessage)))
-    }
-  }
-
-  def unbind(key: String, value: Seq[Int]) =
-    Map(key -> value.mkString(", "))
-}
-
-private object DoubleSeqFormatter extends Formatter[Seq[Double]] {
-
-  def bind(key: String, data: Map[String, String]) = {
-    try {
-      data.get(key).map { string =>
-        val items = string.split(",").map(_.trim).filter(_.nonEmpty).map(_.toDouble).toSeq
-        Right(items)
-      }.getOrElse(
-        Left(List(FormError(key, s"No value found for the key '$key'")))
-      )
-    } catch {
-      case e: Exception => Left(List(FormError(key, e.getMessage)))
-    }
-  }
-
-  def unbind(key: String, value: Seq[Double]) =
-    Map(key -> value.mkString(", "))
+  def unbind(key: String, list: Seq[T]) =
+    Map(key -> list.map(toString).mkString(s"$delimiter "))
 }
 
 object SeqFormatter {
 
-  def apply: Formatter[Seq[String]] = StringSeqFormatter
+  def apply: Formatter[Seq[String]] = new SeqFormatter[String](x => Some(x))
 
-  def applyInt: Formatter[Seq[Int]] = IntSeqFormatter
+  def asInt: Formatter[Seq[Int]] = new SeqFormatter[Int](x => try {
+    Some(x.toInt)
+  } catch {
+    case e: NumberFormatException => None
+  })
 
-  def applyDouble: Formatter[Seq[Double]] = DoubleSeqFormatter
+  def asDouble: Formatter[Seq[Double]] = new SeqFormatter[Double](x => try {
+    Some(x.toDouble)
+  } catch {
+    case e: NumberFormatException => None
+  })
 }

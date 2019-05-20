@@ -2,9 +2,7 @@
 
 @(labelGridWidth: Int)(elements: FieldElements)
 
-@**************************************************
-* Generate input according twitter bootsrap rules *
-**************************************************@
+@* TODO: call labelValue here *@
 <div class="form-group @if(elements.hasErrors) {has-error}">
   <label for="@elements.id" class="col-sm-@labelGridWidth control-label">@elements.label</label>
   <div class="col-sm-@{12 - labelGridWidth}">

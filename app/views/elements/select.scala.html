@@ -5,8 +5,8 @@
 @import play.api.data.Form
 
 @(
-    domainName : String,
-    attribute : String,
+    domainName: String,
+    fieldName: String,
     form: Form[_],
     values: Seq[(String, String)],
     optional: Boolean,
@@ -19,12 +19,13 @@
 @implicitFieldConstructor = @{ FieldConstructor(bootstrapInput.f(labelGridWidth)) }
 
 @helper.select(
-    form(attribute),
+    form(fieldName),
     options(values :_*),
     List(
-        '_label -> attributeLabel(domainName, attribute),
+        '_label -> attributeLabel(domainName, fieldName),
         'class -> "form-control"
     ) ++
-            (if (optional) List('_default -> "") else List()) ++
-            args: _*
+        (if (optional) List('_default -> "") else List())
+      ++
+        args: _*
 )
