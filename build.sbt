@@ -2,7 +2,7 @@ organization := "org.in-cal"
 
 name := "incal-play"
 
-version := "0.1.7"
+version := "0.1.8"
 
 description := "In-Cal extension for Play Framework providing basic readonly/crud controllers, deadbolt-backed security, json formatters, etc."
 
@@ -18,10 +18,12 @@ lazy val root = (project in file(".")).enablePlugins(PlayScala)
 
 libraryDependencies ++= Seq(
   "com.typesafe.play" %% "play" % "2.5.9",
-  "org.webjars" %% "webjars-play" % "2.5.0",
-  "be.objectify" %% "deadbolt-scala" % "2.5.1",
+  "be.objectify" %% "deadbolt-scala" % "2.5.1",         // Deadbolt (authentication)
   "net.codingwell" %% "scala-guice" % "4.0.1",
-  "org.in-cal" %% "incal-core" % "0.1.5"
+  "org.in-cal" %% "incal-core" % "0.1.9",
+  "org.webjars" %% "webjars-play" % "2.5.0",
+  "org.webjars" % "bootstrap" % "3.3.7",                // Bootstrap
+  "org.webjars" % "bootswatch-united" % "3.3.4+1"       // Bootstrap
 )
 
 // POM settings for Sonatype

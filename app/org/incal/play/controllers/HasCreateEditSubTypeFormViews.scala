@@ -1,28 +1,14 @@
 package org.incal.play.controllers
 
+import org.incal.core.util.firstCharToLowerCase
+import org.incal.play.security.AuthAction
 import play.api.data.Form
 import play.api.mvc.{AnyContent, Request}
 import org.incal.play.util.WebUtil.getRequestParamValue
 import play.twirl.api.Html
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
 import scala.concurrent.Future
-
-/**
-  * @author Peter Banda
-  * @since 2018
-  */
-abstract class CreateEditFormViews[T: Manifest, ID] extends HasBasicFormCreateView[T] with HasBasicFormEditView[T, ID] {
-  val man = manifest[T]
-
-  // to make the views and form accessible bellow
-  protected[controllers] def createViewX = createView
-  protected[controllers] def editViewX = editView
-  protected[controllers] def formX = form
-
-  def createViewWithContextX(
-    implicit context: WebContext
-  ): Future[Html] = createViewWithContext(context)
-}
 
 /**
   * @author Peter Banda
@@ -57,6 +43,12 @@ trait HasCreateEditSubTypeFormViews[T, ID] extends HasBasicFormCreateView[T] wit
       subCreateView(ctx)(data)
   }
 
+  def create(concreteClassName: String) = AuthAction { implicit request =>
+    getFormWithViews(concreteClassName)
+      .createViewWithContextX(implicitly[WebContext])
+      .map(Ok(_))
+  }
+
   protected def editView = { implicit ctx =>
     data =>
       val subEditView = getViews(data.form)._2
@@ -82,4 +74,24 @@ trait HasCreateEditSubTypeFormViews[T, ID] extends HasBasicFormCreateView[T] wit
       formWithViews.editViewX.asInstanceOf[EditView]
     )
   }
+}
+
+/**
+  * @author Peter Banda
+  * @since 2018
+  */
+abstract class CreateEditFormViews[T: Manifest, ID] extends HasBasicFormCreateView[T] with HasBasicFormEditView[T, ID] {
+  val man = manifest[T]
+
+  protected val simpleClassName = manifest.runtimeClass.getSimpleName
+  protected val messagePrefix = firstCharToLowerCase(simpleClassName)
+
+  // to make the views and form accessible bellow
+  protected[controllers] def createViewX = createView
+  protected[controllers] def editViewX = editView
+  protected[controllers] def formX = form
+
+  def createViewWithContextX(
+    implicit context: WebContext
+  ): Future[Html] = createViewWithContext(context)
 }
