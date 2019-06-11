@@ -65,30 +65,18 @@ trait ActionSecurity {
     if (noCaching) WithNoCaching(guardedAction) else guardedAction
   }
 
-  protected def restrictUserCustomAny(
-    isAllowed: (USER, AuthenticatedRequest[AnyContent]) => Future[Boolean],
+  protected def restrictAdminOrPermissionAny(
+    permission: String,
     outputHandler: DeadboltHandler = handlerCache()
-  ): AuthActionTransformationAny = restrictUserCustom(isAllowed, parse.anyContent, outputHandler)
+  ): AuthActionTransformationAny =
+    restrictRolesOrPermissionAny(List(Array(SecurityRole.admin)), Some(permission), outputHandler)
 
-  protected def restrictUserCustom[A](
-    isAllowed: (USER, AuthenticatedRequest[A]) => Future[Boolean],
+  protected def restrictAdminOrPermission[A](
+    permission: String,
     bodyParser: BodyParser[A],
     outputHandler: DeadboltHandler = handlerCache()
-  ): AuthActionTransformation[A] = { action =>
-    AuthAction[A](bodyParser) { implicit request =>
-      for {
-        user <- currentUser(outputHandler)
-        allowed <- user.map(user =>
-          isAllowed(user, request)
-        ).getOrElse(
-          // no user found => not-allowed
-          Future(false)
-        )
-        result <- if (allowed) action.apply(request) else outputHandler.onAuthFailure(request)
-      } yield
-        result
-    }
-  }
+  ): AuthActionTransformation[A] =
+    restrictRolesOrPermission[A](List(Array(SecurityRole.admin)), Some(permission), bodyParser, outputHandler)
 
   protected def restrictRolesOrPermissionAny(
     roleGroups: List[Array[String]] = List(),
@@ -113,6 +101,50 @@ trait ActionSecurity {
     else
       // no restriction needed
       AuthAction(bodyParser)
+  }
+
+  protected def restrictAdminOrUserCustomAny(
+    isAllowed: (USER, AuthenticatedRequest[AnyContent]) => Future[Boolean],
+    outputHandler: DeadboltHandler = handlerCache()
+  ): AuthActionTransformationAny =
+    restrictAdminOrUserCustom(isAllowed, parse.anyContent, outputHandler)
+
+  protected def restrictAdminOrUserCustom[A](
+    isAllowed: (USER, AuthenticatedRequest[A]) => Future[Boolean],
+    bodyParser: BodyParser[A],
+    outputHandler: DeadboltHandler = handlerCache()
+  ): AuthActionTransformation[A] =
+    restrictChain(
+      Seq(
+        restrictAdmin(bodyParser, outputHandler = unauthorizedDeadboltHandler),
+        restrictUserCustom(isAllowed, bodyParser, outputHandler)
+      ),
+      bodyParser
+    )
+
+  protected def restrictUserCustomAny(
+    isAllowed: (USER, AuthenticatedRequest[AnyContent]) => Future[Boolean],
+    outputHandler: DeadboltHandler = handlerCache()
+  ): AuthActionTransformationAny = restrictUserCustom(isAllowed, parse.anyContent, outputHandler)
+
+  protected def restrictUserCustom[A](
+    isAllowed: (USER, AuthenticatedRequest[A]) => Future[Boolean],
+    bodyParser: BodyParser[A],
+    outputHandler: DeadboltHandler = handlerCache()
+  ): AuthActionTransformation[A] = { action =>
+    AuthAction[A](bodyParser) { implicit request =>
+      for {
+        user <- currentUser(outputHandler)
+        allowed <- user.map(user =>
+          isAllowed(user, request)
+        ).getOrElse(
+          // no user found => not-allowed
+          Future(false)
+        )
+        result <- if (allowed) action.apply(request) else outputHandler.onAuthFailure(request)
+      } yield
+        result
+    }
   }
 
   private def restrictOrPatternRegexAux[A](
