@@ -1,7 +1,8 @@
 package org.incal.play.controllers
 
-import be.objectify.deadbolt.scala.DeadboltActions
 import org.incal.core.FilterCondition
+import org.incal.play.security.ActionSecurity
+import org.incal.play.security.ActionSecurity.{AuthActionTransformation, AuthActionTransformationAny, AuthenticatedAction}
 import play.api.mvc.BodyParsers.parse
 import play.api.mvc.{Action, AnyContent, BodyParser}
 import org.incal.play.security.SecurityUtil._
@@ -18,19 +19,15 @@ trait RestrictedReadonlyController[ID] extends ReadonlyController[ID] {
     restrictAny(super.listAll(orderBy))
 
   protected def restrict[A](
-    bodyParser: BodyParser[A])(
-    action: AuthenticatedAction[A]
-  ): Action[A]
+    bodyParser: BodyParser[A]
+  ): AuthActionTransformation[A]
+
+  protected def restrictAny: AuthActionTransformationAny = restrict(parse.anyContent)
 
   protected def restrictAny(
     action: Action[AnyContent]
   ): Action[AnyContent] =
     restrict[AnyContent](parse.anyContent)(toAuthenticatedAction(action))
-
-  protected def restrictAny(
-    action: AuthenticatedAction[AnyContent]
-  ): Action[AnyContent] =
-    restrict[AnyContent](parse.anyContent)(action)
 }
 
 trait RestrictedCrudController[ID] extends RestrictedReadonlyController[ID] with CrudController[ID] {
@@ -55,31 +52,36 @@ trait RestrictedCrudController[ID] extends RestrictedReadonlyController[ID] with
 
 trait AdminRestricted {
 
-  protected def deadbolt: DeadboltActions
+  this: ActionSecurity =>
 
   protected def restrict[A](
-    bodyParser: BodyParser[A])(
-    action: AuthenticatedAction[A]
-  ) = restrictAdminNoCaching[A](deadbolt, bodyParser)(action)
+    bodyParser: BodyParser[A]
+  ) = restrictAdmin[A](bodyParser, noCaching = true)
 }
 
-trait AdminRestrictedReadonlyController[ID] extends RestrictedReadonlyController[ID] with AdminRestricted
+trait AdminRestrictedReadonlyController[ID] extends RestrictedReadonlyController[ID] with AdminRestricted {
+  this: ActionSecurity =>
+}
 
-trait AdminRestrictedCrudController[ID] extends RestrictedCrudController[ID] with AdminRestricted
-
+trait AdminRestrictedCrudController[ID] extends RestrictedCrudController[ID] with AdminRestricted {
+  this: ActionSecurity =>
+}
 
 // Subject present restricted
 
 trait SubjectPresentRestricted {
 
-  protected def deadbolt: DeadboltActions
+  this: ActionSecurity =>
 
   protected def restrict[A](
-    bodyParser: BodyParser[A])(
-    action: AuthenticatedAction[A]
-  ) = restrictSubjectPresentNoCaching[A](deadbolt, bodyParser)(action)
+    bodyParser: BodyParser[A]
+  ) = restrictSubjectPresent[A](bodyParser, noCaching = true)
 }
 
-trait SubjectPresentRestrictedReadonlyController[ID] extends RestrictedReadonlyController[ID] with SubjectPresentRestricted
+trait SubjectPresentRestrictedReadonlyController[ID] extends RestrictedReadonlyController[ID] with SubjectPresentRestricted {
+  this: ActionSecurity =>
+}
 
-trait SubjectPresentRestrictedCrudController[ID] extends RestrictedCrudController[ID] with SubjectPresentRestricted
+trait SubjectPresentRestrictedCrudController[ID] extends RestrictedCrudController[ID] with SubjectPresentRestricted {
+  this: ActionSecurity =>
+}

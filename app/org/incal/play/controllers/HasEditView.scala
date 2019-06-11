@@ -1,7 +1,7 @@
 package org.incal.play.controllers
 
+import be.objectify.deadbolt.scala.AuthenticatedRequest
 import play.api.data.Form
-import play.api.mvc.Request
 import play.twirl.api.Html
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -17,7 +17,7 @@ trait HasEditView[E, ID] {
 
   protected type EditView = WebContext => EditViewData => Html
 
-  protected def getEditViewData(id: ID, item: E): Request[_] => Future[EditViewData]
+  protected def getEditViewData(id: ID, item: E): AuthenticatedRequest[_] => Future[EditViewData]
 
   protected def editView: EditView
 
@@ -33,7 +33,7 @@ trait HasEditView[E, ID] {
   */
 trait HasFormEditView[E, ID] extends HasEditView[E, ID] {
 
-  protected def getFormEditViewData(id: ID, form: Form[E]): Request[_] => Future[EditViewData]
+  protected def getFormEditViewData(id: ID, form: Form[E]): AuthenticatedRequest[_] => Future[EditViewData]
 
   override protected def getEditViewData(id: ID, item: E) = getFormEditViewData(id, fillForm(item))
 

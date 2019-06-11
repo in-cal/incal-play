@@ -1,5 +1,6 @@
 package org.incal.play.controllers
 
+import org.incal.play.security.AuthAction
 import play.api.mvc.{Action, AnyContent, Controller, Request}
 
 /**
@@ -10,16 +11,16 @@ import play.api.mvc.{Action, AnyContent, Controller, Request}
  */
 abstract class ControllerDispatcher[C](controllerParamId: String) extends Controller {
 
+  type DispatchActionTransformation = (C => Action[AnyContent]) => Action[AnyContent]
+
   private val noActionCaching = true
 
   protected def getController(controllerId: String): C
 
-  protected def dispatch(
-    action: C => Action[AnyContent]
-  ): Action[AnyContent] = {
-    val resultAction = Action.async { implicit request =>
+  protected def dispatch: DispatchActionTransformation = { cAction =>
+    val resultAction = AuthAction { implicit request =>
       val controllerId = getControllerId(request)
-      action(getController(controllerId)).apply(request)
+      cAction(getController(controllerId)).apply(request)
     }
 
     if (noActionCaching)

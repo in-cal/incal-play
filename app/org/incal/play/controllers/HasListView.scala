@@ -1,5 +1,6 @@
 package org.incal.play.controllers
 
+import be.objectify.deadbolt.scala.AuthenticatedRequest
 import org.incal.core.FilterCondition
 import org.incal.play.Page
 import play.twirl.api.Html
@@ -21,7 +22,7 @@ trait HasListView[E] {
   protected def getListViewData(
     page: Page[E],
     conditions: Seq[FilterCondition]
-  ): Request[_] => Future[ListViewData]
+  ): AuthenticatedRequest[_] => Future[ListViewData]
 
   protected def listView: ListView
 

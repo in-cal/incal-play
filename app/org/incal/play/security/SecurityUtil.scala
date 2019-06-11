@@ -2,170 +2,18 @@ package org.incal.play.security
 
 import java.security.MessageDigest
 
-import be.objectify.deadbolt.scala.{AuthenticatedRequest, DeadboltActions}
-import org.incal.play.controllers.WithNoCaching
-import play.api.http.{Status => HttpStatus}
-import play.api.mvc.BodyParsers.parse
+import org.incal.play.security.ActionSecurity.AuthenticatedAction
 import play.api.mvc._
 import play.api.mvc.Results._
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 /**
   * Utils for controller/action access control and security provided mostly by the Deadbolt.
   */
 object SecurityUtil {
 
-  type AuthenticatedAction[A] =
-    AuthenticatedRequest[A] => Future[Result]
-
-  def restrictAdmin[A](
-    deadbolt: DeadboltActions,
-    bodyParser: BodyParser[A])(
-    action: AuthenticatedAction[A]
-  ): Action[A] =
-    deadbolt.Restrict[A](List(Array(SecurityRole.admin)))(bodyParser)(action)
-
-  def restrictAdminAny(
-    deadbolt: DeadboltActions)(
-    action: AuthenticatedAction[AnyContent]
-  ): Action[AnyContent] =
-    restrictAdmin(deadbolt, parse.anyContent)(action)
-
-  def restrictAdminNoCaching[A](
-    deadbolt: DeadboltActions,
-    bodyParser: BodyParser[A])(
-    action: AuthenticatedAction[A]
-  ): Action[A] = WithNoCaching (
-    restrictAdmin(deadbolt, bodyParser)(action)
-  )
-
-  def restrictAdminAnyNoCaching(
-    deadbolt: DeadboltActions)(
-    action: AuthenticatedAction[AnyContent]
-  ): Action[AnyContent] =
-    restrictAdminNoCaching(deadbolt, parse.anyContent)(action)
-
-  def restrictSubjectPresent[A](
-    deadbolt: DeadboltActions,
-    bodyParser: BodyParser[A])(
-    action: AuthenticatedAction[A]
-  ): Action[A] =
-    deadbolt.SubjectPresent[A]()(bodyParser)(action)
-
-  def restrictSubjectPresentNoCaching[A](
-    deadbolt: DeadboltActions,
-    bodyParser: BodyParser[A])(
-    action: AuthenticatedAction[A]
-  ): Action[A] =
-    WithNoCaching(
-      restrictSubjectPresent(deadbolt, bodyParser)(action)
-    )
-
-  def restrictSubjectPresentAny(
-    deadbolt: DeadboltActions)(
-    action: AuthenticatedAction[AnyContent]
-  ): Action[AnyContent] =
-    restrictSubjectPresent(deadbolt, parse.anyContent)(action)
-
-  def restrictSubjectPresentAnyNoCaching(
-    deadbolt: DeadboltActions)(
-    action: AuthenticatedAction[AnyContent]
-  ): Action[AnyContent] =
-    WithNoCaching(
-      restrictSubjectPresentAny(deadbolt)(action)
-    )
-
   def toAuthenticatedAction[A](action: Action[A]): AuthenticatedAction[A] = {
     implicit request => action.apply(request)
   }
-
-  def toAction[A](bodyParser: BodyParser[A])(action: AuthenticatedAction[A]): Action[A] = Action.async(bodyParser) {
-    implicit request => action.apply(new AuthenticatedRequest[A](request, None))
-  }
-
-  def toActionAny(action: AuthenticatedAction[AnyContent]): Action[AnyContent] = toAction(BodyParsers.parse.anyContent)(action)
-
-  def restrictChain[A](
-    restrictions: Seq[Action[A] => Action[A]]
-  ) = restrictChainFuture(
-    restrictions.map {
-      restriction => action: Action[A] => Future(restriction(action))
-    }
-  )(_)
-
-  def restrictChainFuture[A](
-    restrictions: Seq[Action[A] => Future[Action[A]]])(
-    action: Action[A]
-  ): Action[A] =
-    Action.async(action.parser) { implicit request =>
-      def isAuthorized(result: Result) = result.header.status != HttpStatus.UNAUTHORIZED
-
-      val authorizedResultFuture =
-        restrictions.foldLeft(
-          Future((false, BadRequest("No restriction found")))
-        ) {
-          (resultFuture, restriction) =>
-            for {
-              (authorized, result) <- resultFuture
-
-              nextResult <-
-                if (authorized)
-                  Future((authorized, result))
-                else
-                  restriction(action).flatMap {
-                    _.apply(request).map( newResult =>
-                      (isAuthorized(newResult), newResult)
-                    )
-                  }
-            } yield {
-              nextResult
-            }
-        }
-
-      authorizedResultFuture.map { case (_, result) => result }
-    }
-
-  def restrictChain2(
-    restrictions: Seq[AuthenticatedAction[AnyContent] => Action[AnyContent]]
-  ) = restrictChainFuture2(
-    restrictions.map {
-      restriction => action: AuthenticatedAction[AnyContent] => Future(restriction(action))
-    }
-  )(_)
-
-  def restrictChainFuture2(
-    restrictions: Seq[AuthenticatedAction[AnyContent] => Future[Action[AnyContent]]])(
-    action: AuthenticatedAction[AnyContent]
-  ): Action[AnyContent] =
-    Action.async { implicit request => // action.parser)
-      def isAuthorized(result: Result) = result.header.status != HttpStatus.UNAUTHORIZED
-
-      val authorizedResultFuture =
-        restrictions.foldLeft(
-          Future((false, BadRequest("No restriction found")))
-        ) {
-          (resultFuture, restriction) =>
-            for {
-              (authorized, result) <- resultFuture
-
-              nextResult <-
-                if (authorized)
-                  Future((authorized, result))
-                else
-                  restriction(action).flatMap {
-                    _.apply(request).map( newResult =>
-                      (isAuthorized(newResult), newResult)
-                    )
-                  }
-            } yield {
-              nextResult
-            }
-        }
-
-      authorizedResultFuture.map { case (_, result) => result }
-    }
 
   /**
     * Calculate md5 (e.g. for encrypting passwords).

@@ -1,5 +1,6 @@
 package org.incal.play.controllers
 
+import be.objectify.deadbolt.scala.AuthenticatedRequest
 import org.incal.core.Identity
 import org.incal.core.dataaccess.AsyncCrudRepo
 import org.incal.play.security.AuthAction
@@ -81,7 +82,7 @@ abstract class CrudControllerImpl[E: Format, ID](
       } yield
         item match {
           case None => NotFound(s"$entityName '${formatId(id)}' not found")
-          case Some(entity) =>
+          case Some(_) =>
             render {
               case Accepts.Html() => Ok(editViewWithContext(viewData.get))
               case Accepts.Json() => BadRequest("Edit function doesn't support JSON response. Use get instead.")
@@ -107,7 +108,7 @@ abstract class CrudControllerImpl[E: Format, ID](
     )
   }
 
-  protected def saveCall(item: E)(implicit request: Request[AnyContent]): Future[ID] = repo.save(item)
+  protected def saveCall(item: E)(implicit request: AuthenticatedRequest[AnyContent]): Future[ID] = repo.save(item)
 
   def update(id: ID): Action[AnyContent] = update(id, _ => goHome)
 
@@ -126,7 +127,7 @@ abstract class CrudControllerImpl[E: Format, ID](
     )
   }
 
-  protected def updateCall(item: E)(implicit request: Request[AnyContent]): Future[ID] = repo.update(item)
+  protected def updateCall(item: E)(implicit request: AuthenticatedRequest[AnyContent]): Future[ID] = repo.update(item)
 
   def delete(id: ID) = AuthAction { implicit request =>
     deleteCall(id).map { _ =>
@@ -137,7 +138,7 @@ abstract class CrudControllerImpl[E: Format, ID](
     }.recover(handleDeleteExceptions(id))
   }
 
-  protected def deleteCall(id: ID)(implicit request: Request[AnyContent]): Future[Unit] = repo.delete(id)
+  protected def deleteCall(id: ID)(implicit request: AuthenticatedRequest[AnyContent]): Future[Unit] = repo.delete(id)
 
   protected def handleEditExceptions(id: ID)(implicit request: Request[_]) = handleExceptionsWithId("an edit", id)
   protected def handleSaveExceptions(implicit request: Request[_]) = handleExceptions("a save")

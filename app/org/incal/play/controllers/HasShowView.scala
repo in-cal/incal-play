@@ -1,7 +1,7 @@
 package org.incal.play.controllers
 
+import be.objectify.deadbolt.scala.AuthenticatedRequest
 import play.api.data.Form
-import play.api.mvc.Request
 import play.twirl.api.Html
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -17,7 +17,7 @@ trait HasShowView[E, ID] {
 
   protected type ShowView = WebContext => ShowViewData => Html
 
-  protected def getShowViewData(id: ID, item: E): Request[_] => Future[ShowViewData]
+  protected def getShowViewData(id: ID, item: E): AuthenticatedRequest[_] => Future[ShowViewData]
 
   protected def showView: ShowView
 
@@ -33,7 +33,7 @@ trait HasShowView[E, ID] {
   */
 trait HasFormShowView[E, ID] extends HasShowView[E, ID] {
 
-  protected def getFormShowViewData(id: ID, form: Form[E]): Request[_] => Future[ShowViewData]
+  protected def getFormShowViewData(id: ID, form: Form[E]): AuthenticatedRequest[_] => Future[ShowViewData]
 
   override protected def getShowViewData(id: ID, item: E) = getFormShowViewData(id, fillForm(item))
 

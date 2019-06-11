@@ -1,12 +1,13 @@
 package org.incal.play.controllers
 
+import org.incal.core.dataaccess.AsyncReadonlyRepo
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json._
 import play.api.mvc._
-import org.incal.core.dataaccess._
 import org.incal.core.FilterCondition
 import org.incal.play.Page
 import org.incal.play.security.AuthAction
+import org.incal.core.dataaccess._
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
@@ -84,6 +85,7 @@ abstract class ReadonlyControllerImpl[E: Format, ID] extends BaseController
         item match {
           case None => NotFound(s"$entityName #${formatId(id)} not found")
           case Some(entity) =>
+            implicit val req = request: Request[_]
             render {
               case Accepts.Html() => Ok(showViewWithContext(viewData.get))
               case Accepts.Json() => Ok(toJson(entity))
@@ -112,11 +114,13 @@ abstract class ReadonlyControllerImpl[E: Format, ID] extends BaseController
           Page(items, page, page * pageLimit, count, orderBy),
           conditions
         )(request)
-      } yield
+      } yield {
+        implicit val req = request: Request[_]
         render {
           case Accepts.Html() => Ok(listViewWithContext(viewData))
           case Accepts.Json() => Ok(toJson(items))
         }
+      }
     }.recover(handleFindExceptions)
   }
 
@@ -134,11 +138,14 @@ abstract class ReadonlyControllerImpl[E: Format, ID] extends BaseController
           Page(items, 0, 0, count, orderBy),
           Nil
         )(request)
-      } yield
+      } yield {
+        implicit val req = request: Request[_]
+
         render {
           case Accepts.Html() => Ok(listViewWithContext(viewData))
           case Accepts.Json() => Ok(toJson(items))
         }
+      }
     }.recover(handleListAllExceptions)
   }
 
