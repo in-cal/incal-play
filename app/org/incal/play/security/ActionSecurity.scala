@@ -67,32 +67,37 @@ trait ActionSecurity {
 
   protected def restrictAdminOrPermissionAny(
     permission: String,
+    noCaching: Boolean = false,
     outputHandler: DeadboltHandler = handlerCache()
   ): AuthActionTransformationAny =
-    restrictRolesOrPermissionAny(List(Array(SecurityRole.admin)), Some(permission), outputHandler)
+    restrictRolesOrPermissionAny(List(Array(SecurityRole.admin)), Some(permission), noCaching, outputHandler)
 
   protected def restrictAdminOrPermission[A](
     permission: String,
     bodyParser: BodyParser[A],
+    noCaching: Boolean = false,
     outputHandler: DeadboltHandler = handlerCache()
   ): AuthActionTransformation[A] =
-    restrictRolesOrPermission[A](List(Array(SecurityRole.admin)), Some(permission), bodyParser, outputHandler)
+    restrictRolesOrPermission[A](List(Array(SecurityRole.admin)), Some(permission), bodyParser, noCaching, outputHandler)
 
   protected def restrictRolesOrPermissionAny(
     roleGroups: List[Array[String]] = List(),
     permission: Option[String] = None,
+    noCaching: Boolean = false,
     outputHandler: DeadboltHandler = handlerCache()
   ): AuthActionTransformationAny =
-    restrictRolesOrPermission(roleGroups, permission, parse.anyContent, outputHandler)
+    restrictRolesOrPermission(roleGroups, permission, parse.anyContent, noCaching, outputHandler)
 
   protected def restrictRolesOrPermission[A](
     roleGroups: List[Array[String]] = List(),
     permission: Option[String] = None,
     bodyParser: BodyParser[A],
+    noCaching: Boolean = false,
     outputHandler: DeadboltHandler = handlerCache()
-  ): AuthActionTransformation[A] = {
+  ): AuthActionTransformation[A] = { action =>
+
     // TODO: once we migrate to deadbolt >= 2.5 we can use deadbolt.Composite instead
-    if (roleGroups.nonEmpty && permission.isDefined)
+    val authAction = if (roleGroups.nonEmpty && permission.isDefined)
       restrictOrPatternRegexAux(roleGroups, permission.get, bodyParser, outputHandler)
     else if (roleGroups.nonEmpty)
       deadbolt.Restrict(roleGroups, outputHandler)(bodyParser)_
@@ -101,38 +106,47 @@ trait ActionSecurity {
     else
       // no restriction needed
       AuthAction(bodyParser)
+
+    if (noCaching) WithNoCaching(authAction(action)) else authAction(action)
   }
 
   protected def restrictAdminOrUserCustomAny(
     isAllowed: (USER, AuthenticatedRequest[AnyContent]) => Future[Boolean],
+    noCaching: Boolean = false,
     outputHandler: DeadboltHandler = handlerCache()
   ): AuthActionTransformationAny =
-    restrictAdminOrUserCustom(isAllowed, parse.anyContent, outputHandler)
+    restrictAdminOrUserCustom(isAllowed, parse.anyContent, noCaching, outputHandler)
 
   protected def restrictAdminOrUserCustom[A](
     isAllowed: (USER, AuthenticatedRequest[A]) => Future[Boolean],
     bodyParser: BodyParser[A],
+    noCaching: Boolean = false,
     outputHandler: DeadboltHandler = handlerCache()
-  ): AuthActionTransformation[A] =
-    restrictChain(
+  ): AuthActionTransformation[A] = { action =>
+    val authAction = restrictChain(
       Seq(
         restrictAdmin(bodyParser, outputHandler = unauthorizedDeadboltHandler),
-        restrictUserCustom(isAllowed, bodyParser, outputHandler)
+        restrictUserCustom(isAllowed, bodyParser, false, outputHandler)
       ),
       bodyParser
     )
 
+    if (noCaching) WithNoCaching(authAction(action)) else authAction(action)
+  }
+
   protected def restrictUserCustomAny(
     isAllowed: (USER, AuthenticatedRequest[AnyContent]) => Future[Boolean],
+    noCaching: Boolean = false,
     outputHandler: DeadboltHandler = handlerCache()
-  ): AuthActionTransformationAny = restrictUserCustom(isAllowed, parse.anyContent, outputHandler)
+  ): AuthActionTransformationAny = restrictUserCustom(isAllowed, parse.anyContent, noCaching, outputHandler)
 
   protected def restrictUserCustom[A](
     isAllowed: (USER, AuthenticatedRequest[A]) => Future[Boolean],
     bodyParser: BodyParser[A],
+    noCaching: Boolean = false,
     outputHandler: DeadboltHandler = handlerCache()
   ): AuthActionTransformation[A] = { action =>
-    AuthAction[A](bodyParser) { implicit request =>
+    val guardedAction = AuthAction[A](bodyParser) { implicit request =>
       for {
         user <- currentUser(outputHandler)
         allowed <- user.map(user =>
@@ -145,6 +159,8 @@ trait ActionSecurity {
       } yield
         result
     }
+
+    if (noCaching) WithNoCaching(guardedAction) else guardedAction
   }
 
   private def restrictOrPatternRegexAux[A](

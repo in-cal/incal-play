@@ -18,6 +18,8 @@ abstract class SecureControllerDispatcher[C](controllerParamId: String) extends 
 
   protected val actionNameMap = MMap[(String, String), AuthActionTransformationAny]()
 
+  protected val noCaching = false
+
   protected def getAllowedRoleGroups(
     controllerId:
     String, actionName: String
@@ -57,7 +59,7 @@ abstract class SecureControllerDispatcher[C](controllerParamId: String) extends 
     val roleGroups = getAllowedRoleGroups(controllerId, actionName)
     val permission = getPermission(controllerId, actionName)
 
-    restrictRolesOrPermissionAny(roleGroups, permission, outputHandler)
+    restrictRolesOrPermissionAny(roleGroups, permission, noCaching, outputHandler)
   }
 }
 
