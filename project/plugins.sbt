@@ -8,3 +8,5 @@ addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.2")
 addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.5.9")
 
 // addSbtPlugin("com.typesafe.sbt" % "sbt-twirl" % "1.1.1")
+
+addSbtPlugin("com.typesafe.sbt" % "sbt-license-report" % "1.2.0")
