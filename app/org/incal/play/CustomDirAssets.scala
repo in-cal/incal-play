@@ -1,5 +1,7 @@
 package org.incal.play
 
+import play.api.Logger
+
 import  _root_.controllers.Assets
 import  _root_.controllers.Assets.Asset
 import javax.inject.{Inject, Singleton}
@@ -24,7 +26,19 @@ import scala.concurrent.Future
 @Singleton
 class CustomDirAssets @Inject() (assets: Assets, configuration: Configuration) {
 
-  private val externalAssetPaths = configuration.getStringSeq("assets.external_paths").getOrElse(Nil).toList
+  private val externalAssetPaths = {
+    val paths = configuration.getStringSeq("assets.external_paths").getOrElse(Nil).toList
+    val nonRootPaths = paths.filter(_ != "/")
+
+    if (nonRootPaths.nonEmpty) {
+      Logger.info(s"Setting external asset paths to '${nonRootPaths.mkString("', '")}'.")
+    }
+    if (paths.size > nonRootPaths.size) {
+      Logger.warn("The app root folder '/' cannot be set as an external asset path because it's considered a security vulnerability.")
+    }
+
+    nonRootPaths
+  }
 
   def versioned(
     primaryPath: String,
