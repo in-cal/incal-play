@@ -73,7 +73,10 @@ publishMavenStyle := true
 
 scmInfo := Some(ScmInfo(url("https://github.com/in-cal/incal-play"), "scm:git@github.com:in-cal/incal-play.git"))
 
-developers := List(Developer("bnd", "Peter Banda", "peter.banda@protonmail.com", url("https://peterbanda.net")))
+developers := List(
+	Developer("bnd", "Peter Banda", "peter.banda@protonmail.com", url("https://peterbanda.net")),
+	Developer("valentin.groues", "Valentin Groues", "valentin.groues@uni.lu", url("https://github.com/neoflex"))
+)
 
 licenses += "Apache 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")
 

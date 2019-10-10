@@ -1,4 +1,4 @@
-# InCal Play [![version](https://img.shields.io/badge/version-0.2.2-green.svg)](https://in-cal.org) [![License](https://img.shields.io/badge/License-Apache%202.0-lightgrey.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+# InCal Play [![version](https://img.shields.io/badge/version-0.2.2-green.svg)](https://in-cal.org) [![License](https://img.shields.io/badge/License-Apache%202.0-lightgrey.svg)](https://www.apache.org/licenses/LICENSE-2.0) [![Build Status](https://travis-ci.com/in-cal/incal-play.svg?branch=master)](https://travis-ci.com/in-cal/incal-play)
 
 Play Framework extended with basic readonly/crud controllers, deadbolt-backed security, json formatters, etc. 
 
