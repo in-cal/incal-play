@@ -4,7 +4,7 @@ organization := "org.in-cal"
 
 name := "incal-play"
 
-version := "0.2.2"
+version := "0.2.3"
 
 description := "In-Cal extension for Play Framework providing basic readonly/crud controllers, deadbolt-backed security, json formatters, etc."
 
@@ -67,7 +67,7 @@ licenseOverrides := {
 
 // POM settings for Sonatype
 
-homepage := Some(url("https://in-cal.org"))
+homepage := Some(url("https://github.com/in-cal/incal-play"))
 
 publishMavenStyle := true
 
