@@ -7,7 +7,7 @@ Play Framework extended with basic readonly/crud controllers, deadbolt-backed se
 All you need is **Scala 2.11**. To pull the library you have to add the following dependency to *build.sbt*
 
 ```
-"org.in-cal" %% "incal-play" % "0.2.2"
+"org.in-cal" %% "incal-play" % "0.2.4"
 ```
 
 or to *pom.xml* (if you use maven)
@@ -16,11 +16,10 @@ or to *pom.xml* (if you use maven)
 <dependency>
     <groupId>org.in-cal</groupId>
     <artifactId>incal-play_2.11</artifactId>
-    <version>0.2.2</version>
+    <version>0.2.4</version>
 </dependency>
 ```
 
 #### Play
 
 This library uses (and is compatible with) Play version **2.5.9**.
-
