@@ -123,10 +123,43 @@ trait ActionSecurity {
     noCaching: Boolean = false,
     outputHandler: DeadboltHandler = handlerCache()
   ): AuthActionTransformation[A] = { action =>
-    val authAction = restrictChain(
+    val authAction = restrictOrChain(
       Seq(
         restrictAdmin(bodyParser, outputHandler = unauthorizedDeadboltHandler),
         restrictUserCustom(isAllowed, bodyParser, false, outputHandler)
+      ),
+      bodyParser
+    )
+
+    if (noCaching) WithNoCaching(authAction(action)) else authAction(action)
+  }
+
+  protected def restrictAdminOrPermissionAndUserCustomAny(
+    permission: String,
+    isAllowed: (USER, AuthenticatedRequest[AnyContent]) => Future[Boolean],
+    noCaching: Boolean = false,
+    outputHandler: DeadboltHandler = handlerCache()
+  ): AuthActionTransformationAny =
+    restrictAdminOrPermissionAndUserCustom(permission, isAllowed, parse.anyContent, noCaching, outputHandler)
+
+  protected def restrictAdminOrPermissionAndUserCustom[A](
+    permission: String,
+    isAllowed: (USER, AuthenticatedRequest[A]) => Future[Boolean],
+    bodyParser: BodyParser[A],
+    noCaching: Boolean = false,
+    outputHandler: DeadboltHandler = handlerCache()
+  ): AuthActionTransformation[A] = { action =>
+    val authAction = restrictOrChain(
+      Seq(
+        restrictAdmin(bodyParser, outputHandler = unauthorizedDeadboltHandler),
+        restrictAndChain(
+          Seq(
+            restrictRolesOrPermission(Nil, Some(permission), bodyParser, false, unauthorizedDeadboltHandler),
+            restrictUserCustom(isAllowed, bodyParser, false, unauthorizedDeadboltHandler)
+          ),
+          bodyParser,
+          outputHandler
+        )
       ),
       bodyParser
     )
@@ -169,7 +202,7 @@ trait ActionSecurity {
     bodyParser: BodyParser[A],
     outputHandler: DeadboltHandler
   ): AuthActionTransformation[A] =
-    restrictChain(
+    restrictOrChain(
       Seq(
         deadbolt.Restrict(roleGroups, unauthorizedDeadboltHandler)(bodyParser) _,
         deadbolt.Pattern(permission, PatternType.REGEX, None, outputHandler)(bodyParser) _
@@ -177,53 +210,117 @@ trait ActionSecurity {
       bodyParser
     )
 
-  protected def restrictChainAny(
-    restrictions: Seq[AuthActionTransformationAny]
-  ) = restrictChain(restrictions, parse.anyContent)
+  //////////////
+  // Chaining //
+  //////////////
 
-  protected def restrictChain[A](
+  // OR
+  protected def restrictOrChainAny(
+    restrictions: Seq[AuthActionTransformationAny]
+  ) = restrictOrChain(restrictions, parse.anyContent)
+
+  protected def restrictOrChain[A](
     restrictions: Seq[AuthActionTransformation[A]],
     bodyParser: BodyParser[A]
   ): AuthActionTransformation[A] =
-    restrictChainFuture[A](
+    restrictOrChainFuture[A](
       restrictions.map { restriction =>
         action: AuthenticatedAction[A] => Future(restriction(action))
       },
       bodyParser
     )
 
-  protected def restrictChainFutureAny(
+  protected def restrictOrChainFutureAny(
     restrictions: Seq[AuthActionFutureTransformationAny]
-  ) = restrictChainFuture(restrictions, parse.anyContent)
+  ) = restrictOrChainFuture(restrictions, parse.anyContent)
 
+  protected def restrictOrChainFuture[A](
+    restrictions: Seq[AuthActionFutureTransformation[A]],
+    bodyParser: BodyParser[A]
+  ): AuthActionTransformation[A] =
+    // once it's authorized it stays authorized
+    restrictChainFuture(
+      false,
+      authorized => authorized,
+      (result, _: AuthenticatedRequest[A]) => Future(result)
+    )(restrictions, bodyParser)
+
+  // AND
+  protected def restrictAndChainAny(
+    restrictions: Seq[AuthActionTransformationAny],
+    outputHandler: DeadboltHandler
+  ) = restrictAndChain(restrictions, parse.anyContent, outputHandler)
+
+  protected def restrictAndChain[A](
+    restrictions: Seq[AuthActionTransformation[A]],
+    bodyParser: BodyParser[A],
+    outputHandler: DeadboltHandler
+  ): AuthActionTransformation[A] =
+    restrictAndChainFuture[A](
+      restrictions.map { restriction =>
+        action: AuthenticatedAction[A] => Future(restriction(action))
+      },
+      bodyParser,
+      outputHandler
+    )
+
+  protected def restrictAndChainFutureAny(
+    restrictions: Seq[AuthActionFutureTransformationAny],
+    outputHandler: DeadboltHandler
+  ) = restrictAndChainFuture(restrictions, parse.anyContent, outputHandler)
+
+  protected def restrictAndChainFuture[A](
+    restrictions: Seq[AuthActionFutureTransformation[A]],
+    bodyParser: BodyParser[A],
+    outputHandler: DeadboltHandler
+  ): AuthActionTransformation[A] =
+    // once it's not authorized it stays not-authorized
+    restrictChainFuture(
+      true,
+      authorized => !authorized,
+      (result, request: AuthenticatedRequest[A]) =>
+         if (result.header.status == HttpStatus.UNAUTHORIZED)
+           outputHandler.onAuthFailure(request)
+         else
+           Future(result)
+    )(restrictions, bodyParser)
+
+  // General: for both, AND + OR
   protected def restrictChainFuture[A](
+    start: Boolean,
+    stop: Boolean => Boolean,
+    handleFinalResult: (Result, AuthenticatedRequest[A]) => Future[Result])(
     restrictions: Seq[AuthActionFutureTransformation[A]],
     bodyParser: BodyParser[A]
   ): AuthActionTransformation[A] = { action: AuthenticatedAction[A] =>
-    Action.async(bodyParser) { implicit request => // action.parser)
+    AuthAction[A](bodyParser) { implicit request => // action.parser)
       def isAuthorized(result: Result) = result.header.status != HttpStatus.UNAUTHORIZED
 
-      val authorizedResultFuture =
-        restrictions.foldLeft(
-          Future((false, BadRequest("No restriction found")))
-        ) {
-          (resultFuture, restriction) =>
-            for {
-              (authorized, result) <- resultFuture
+      for {
+        (_, result) <-
+          restrictions.foldLeft(
+            Future((start, BadRequest("No restriction found")))
+          ) { (resultFuture, restriction) =>
+              for {
+                (authorized, result) <- resultFuture
 
-              nextResult <- if (authorized)
-                Future((authorized, result))
-              else
-                restriction(action).flatMap {
-                  _(request).map( newResult =>
-                    (isAuthorized(newResult), newResult)
-                  )
-                }
-            } yield
-              nextResult
-        }
+                // if we should stop (i.e., the result of chaining is already determined) we do so, otherwise we move forward
+                nextResult <- if (stop(authorized))
+                  Future((authorized, result))
+                else
+                  restriction(action).flatMap {
+                    _ (request).map(newResult =>
+                      (isAuthorized(newResult), newResult)
+                    )
+                  }
+              } yield
+                nextResult
+          }
 
-      authorizedResultFuture.map { case (_, result) => result }
+        // if needed produce a custom final result
+        finalResult <- handleFinalResult(result, request)
+      } yield
+        finalResult
     }
   }
 
