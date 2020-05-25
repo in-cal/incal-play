@@ -1,5 +1,6 @@
 package org.incal.play.util
 
+import org.incal.core.dataaccess.{AscSort, DescSort, Sort}
 import play.api.mvc.Results.Redirect
 import play.api.mvc.{AnyContent, Call, Request, Result}
 
@@ -73,4 +74,20 @@ object WebUtil {
       case Some(refererUrl) => Redirect(refererUrl)
       case None => Redirect(call)
     }
+
+  /**
+    * Converts field name into a Sort class.
+    *
+    * @param fieldName Reference column sorting.
+    * @return Option with Sort class indicating an order (asc/desc). None, if string is empty.
+    */
+  def toSort(fieldName : String): Seq[Sort] =
+    if (fieldName.nonEmpty) {
+      val sort = if (fieldName.startsWith("-"))
+        DescSort(fieldName.substring(1, fieldName.length))
+      else
+        AscSort(fieldName)
+      Seq(sort)
+    } else
+      Nil
 }

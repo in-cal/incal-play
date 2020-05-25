@@ -8,6 +8,7 @@ import org.incal.core.FilterCondition
 import org.incal.play.Page
 import org.incal.play.security.AuthAction
 import org.incal.core.dataaccess._
+import org.incal.play.util.WebUtil.toSort
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
@@ -230,23 +231,6 @@ abstract class ReadonlyControllerImpl[E: Format, ID] extends BaseController
     fieldNames: Traversable[String]
   ): Future[Map[String, String => Option[Any]]] =
     Future(Map())
-
-  /**
-    * TODO: Move this into utility object.
-    * Convert String into a Sort class.
-    *
-    * @param fieldName Reference column sorting.
-    * @return Option with Sort class indicating an order (asc/desc). None, if string is empty.
-    */
-  protected def toSort(fieldName : String): Seq[Sort] =
-    if (fieldName.nonEmpty) {
-      val sort = if (fieldName.startsWith("-"))
-        DescSort(fieldName.substring(1, fieldName.length))
-      else
-        AscSort(fieldName)
-      Seq(sort)
-    } else
-      Nil
 
   protected def result[T](future: Future[T]): T =
     Await.result(future, timeout)
