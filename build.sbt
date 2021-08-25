@@ -4,11 +4,11 @@ organization := "org.in-cal"
 
 name := "incal-play"
 
-version := "0.3.0-SNAPSHOT"
+version := "0.3.0"
 
 description := "In-Cal extension for Play Framework providing basic readonly/crud controllers, deadbolt-backed security, json formatters, etc."
 
-isSnapshot := true
+isSnapshot := false
 
 scalaVersion := "2.11.12"
 
